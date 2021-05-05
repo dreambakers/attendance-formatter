@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Attendance formatter</title>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css" integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" crossorigin="anonymous">
+</head>
+<body>
+    <div class="container">
+        <div class="m-3">
+            <h2 class="my-5">Attendance formatter</h2>
+
+            <div id="inputArea">
+                <textarea class="w-100" id="chat" cols="30" rows="20" placeholder="Paste Google Meet chat content here..."></textarea>
+                <button class="btn btn-primary mt-5" id="formatAttendanceBtn">Get formatted attendance</button>
+            </div>
+
+            <div id="formattedAttendance" class="d-none">
+                <table class="table table-striped">
+                    <thead>
+                      <tr>
+                        <th scope="col">#</th>
+                        <th scope="col">Roll Number</th>
+                        <th scope="col">Name</th>
+                      </tr>
+                    </thead>
+                    <tbody id="tableBody">
+                    </tbody>
+                </table>
+
+                <button class="btn btn-success" id="downloadBtn">Download Excel File</button>
+                <button class="btn btn-danger" id="backBtn">Back</button>
+            </div>
+        </div>
+    </div>
+
+
+    <script src="https://code.jquery.com/jquery-3.2.1.slim.min.js" integrity="sha384-KJ3o2DKtIkvYIK3UENzmM7KCkRr/rE9/Qpg6aAZGJwFDMVNA/GpGFF93hXpG5KkN" crossorigin="anonymous"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js" integrity="sha384-ApNbgh9B+Y1QKtv3Rn7W3mgPxhU9K/ScQsAP7hUibX39j7fakFPskvXusvfa0b4Q" crossorigin="anonymous"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js" integrity="sha384-JZR6Spejh4U02d8jOt6vLEHfe/JQGiRRSQQxSfFWpi1MquVdAyjUar5+76PVCmYl" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/json2csv"></script>
+    <script>
+        // YES I KNOW THIS CODE IS BAD!
+        // CODE WRITTEN FOR FREE IS BAD!
+        $(document).ready(function() {
+            $('#formatAttendanceBtn').on('click', function() {
+                if ($('#chat').val()) {
+
+                    var str = $('#chat').val();
+                    const unique = [];
+                    const repetitions = [];
+
+
+                    for (let line of str.split('\n')) {
+
+                        const match = line.match(/\d{5}/g);
+
+                        if (match) {
+                            if (!unique.find(student => student.rollNo === match[0])) {
+                                unique.push({
+                                    rollNo: match[0],
+                                    name: line.split(':')[0],
+                                });
+                            } else {
+                                repetitions.push(
+                                    {
+                                        rollNo: match[0],
+                                        name: line.split(':')[0],
+                                    }
+                                );
+                            }
+                        }
+                    }
+
+                    function sortByKey(array, key) {
+                        return array.sort(function(a, b) {
+                            var x = a[key]; var y = b[key];
+                            return ((x < y) ? -1 : ((x > y) ? 1 : 0));
+                        });
+                    }
+
+                    function getDateString() {
+                        const date = new Date();
+                        const year = date.getFullYear();
+                        const month = `${date.getMonth() + 1}`.padStart(2, '0');
+                        const day =`${date.getDate()}`.padStart(2, '0');
+                        return `${year}${month}${day}`;
+                    }
+
+                    const fields = ['rollNo', 'name'];
+                    const opts = { fields };
+
+                    const csv = json2csv.parse(unique, opts);
+
+                    let tableBody = '';
+                    for (let i = 0; i < unique.length; i++) {
+                        tableBody += `
+                            <tr>
+                                <td scope="row">${i + 1}</td>
+                                <td scope="row">${unique[i].rollNo}</td>
+                                <td>${unique[i].name}</td>
+                            </tr>
+                        `;
+                    }
+
+                    $('#tableBody').html(tableBody);
+
+                    $("#formattedAttendance").toggleClass("d-none");
+                    $("#inputArea").toggleClass("d-none");
+
+                    $('#downloadBtn').on('click', function() {
+                        var a = document.createElement('a');
+                        var fileName = `attendance_${getDateString()}`;
+                        var content = csv;
+                        mimeType = 'application/octet-stream';
+
+                        if (navigator.msSaveBlob) { // IE10
+                            navigator.msSaveBlob(new Blob([content], {
+                                type: 'text/csv;encoding:utf-8'
+                            }), fileName);
+                        } else if (URL && 'download' in a) { //html5 A[download]
+                            a.href = URL.createObjectURL(new Blob([content], {
+                                type: 'text/csv;encoding:utf-8'
+                            }));
+                            a.setAttribute('download', fileName);
+                            document.body.appendChild(a);
+                            a.click();
+                            document.body.removeChild(a);
+                        } else {
+                            location.href = 'data:application/octet-stream,' + encodeURIComponent(content); // only this mime type is supported
+                        }
+                    });
+                }
+            });
+
+            $("#backBtn").on('click', function() {
+                $('#inputArea').toggleClass('d-none');
+                $('#formattedAttendance').toggleClass('d-none');
+            });
+        });
+    </script>
+
+</body>
+</html>
