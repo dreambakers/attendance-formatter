@@ -45,31 +45,20 @@
         // YES I KNOW THIS CODE IS BAD!
         // CODE WRITTEN FOR FREE IS BAD!
         $(document).ready(function() {
+            var csv;
             $('#formatAttendanceBtn').on('click', function() {
                 if ($('#chat').val()) {
-
                     var str = $('#chat').val();
-                    const unique = [];
-                    const repetitions = [];
+                    var unique = [];
 
-
-                    for (let line of str.split('\n')) {
-
-                        const match = line.match(/\d{5}/g);
-
+                    for (var line of str.split('\n')) {
+                        var match = line.match(/\d{5}/g);
                         if (match) {
                             if (!unique.find(student => student.rollNo === match[0])) {
                                 unique.push({
                                     rollNo: match[0],
                                     name: line.split(':')[0],
                                 });
-                            } else {
-                                repetitions.push(
-                                    {
-                                        rollNo: match[0],
-                                        name: line.split(':')[0],
-                                    }
-                                );
                             }
                         }
                     }
@@ -81,21 +70,14 @@
                         });
                     }
 
-                    function getDateString() {
-                        const date = new Date();
-                        const year = date.getFullYear();
-                        const month = `${date.getMonth() + 1}`.padStart(2, '0');
-                        const day =`${date.getDate()}`.padStart(2, '0');
-                        return `${year}${month}${day}`;
-                    }
+                    var fields = ['rollNo', 'name'];
+                    var opts = { fields };
 
-                    const fields = ['rollNo', 'name'];
-                    const opts = { fields };
+                    unique = sortByKey(unique, 'rollNo');
+                    csv = json2csv.parse(unique, opts);
 
-                    const csv = json2csv.parse(unique, opts);
-
-                    let tableBody = '';
-                    for (let i = 0; i < unique.length; i++) {
+                    var tableBody = '';
+                    for (var i = 0; i < unique.length; i++) {
                         tableBody += `
                             <tr>
                                 <td scope="row">${i + 1}</td>
@@ -106,38 +88,43 @@
                     }
 
                     $('#tableBody').html(tableBody);
-
                     $("#formattedAttendance").toggleClass("d-none");
                     $("#inputArea").toggleClass("d-none");
-
-                    $('#downloadBtn').on('click', function() {
-                        var a = document.createElement('a');
-                        var fileName = `attendance_${getDateString()}`;
-                        var content = csv;
-                        mimeType = 'application/octet-stream';
-
-                        if (navigator.msSaveBlob) { // IE10
-                            navigator.msSaveBlob(new Blob([content], {
-                                type: 'text/csv;encoding:utf-8'
-                            }), fileName);
-                        } else if (URL && 'download' in a) { //html5 A[download]
-                            a.href = URL.createObjectURL(new Blob([content], {
-                                type: 'text/csv;encoding:utf-8'
-                            }));
-                            a.setAttribute('download', fileName);
-                            document.body.appendChild(a);
-                            a.click();
-                            document.body.removeChild(a);
-                        } else {
-                            location.href = 'data:application/octet-stream,' + encodeURIComponent(content); // only this mime type is supported
-                        }
-                    });
                 }
             });
 
             $("#backBtn").on('click', function() {
                 $('#inputArea').toggleClass('d-none');
                 $('#formattedAttendance').toggleClass('d-none');
+            });
+
+            $('#downloadBtn').on('click', function() {
+                function getDateString() {
+                    var date = new Date();
+                    var year = date.getFullYear();
+                    var month = `${date.getMonth() + 1}`.padStart(2, '0');
+                    var day =`${date.getDate()}`.padStart(2, '0');
+                    return `${year}${month}${day}`;
+                }
+
+                var a = document.createElement('a');
+                var fileName = `attendance_${getDateString()}`;
+
+                if (navigator.msSaveBlob) { // IE10
+                    navigator.msSaveBlob(new Blob([csv], {
+                        type: 'text/csv;encoding:utf-8'
+                    }), fileName);
+                } else if (URL && 'download' in a) { //html5 A[download]
+                    a.href = URL.createObjectURL(new Blob([csv], {
+                        type: 'text/csv;encoding:utf-8'
+                    }));
+                    a.setAttribute('download', fileName);
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                } else {
+                    location.href = 'data:application/octet-stream,' + encodeURIComponent(content); // only this mime type is supported
+                }
             });
         });
     </script>
