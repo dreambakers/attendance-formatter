@@ -108,7 +108,7 @@
                 }
 
                 var a = document.createElement('a');
-                var fileName = `attendance_${getDateString()}`;
+                var fileName = `attendance_${getDateString()}.csv`;
 
                 if (navigator.msSaveBlob) { // IE10
                     navigator.msSaveBlob(new Blob([csv], {
